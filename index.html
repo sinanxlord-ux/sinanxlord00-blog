@@ -1,0 +1,279 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCFp4oHYalBK0vOhqfIV3G4djh3hTsfDjs",
+authDomain:"sinanxlord-site.firebaseapp.com",
+projectId:"sinanxlord-site"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let admin=false;
+
+/* SAYFA GECIS */
+
+window.openPage=function(page){
+
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.getElementById(page).classList.add("active");
+
+}
+
+/* BMI */
+
+window.bmi=function(){
+
+let kilo=document.getElementById("kilo").value;
+let boy=document.getElementById("boy").value/100;
+
+let sonuc=kilo/(boy*boy);
+
+document.getElementById("bmiSonuc").innerText="BMI: "+sonuc.toFixed(2);
+
+}
+
+/* YORUM EKLE */
+
+window.yorumEkle=async function(){
+
+let isim=document.getElementById("isim").value;
+let yorum=document.getElementById("yorum").value;
+
+if(isim==""||yorum=="") return;
+
+await addDoc(collection(db,"yorumlar"),{
+isim:isim,
+yorum:yorum,
+like:0
+});
+
+document.getElementById("yorum").value="";
+
+}
+
+/* YORUMLARI CEK */
+
+onSnapshot(collection(db,"yorumlar"),(snapshot)=>{
+
+let list=document.getElementById("yorumList");
+list.innerHTML="";
+
+snapshot.forEach((docu)=>{
+
+let data=docu.data();
+
+let sil="";
+
+if(admin){
+sil=`<button onclick="yorumSil('${docu.id}')">Sil</button>`;
+}
+
+list.innerHTML+=`
+
+<div class="commentBox">
+<b>${data.isim}</b><br>
+${data.yorum}<br>
+<button onclick="likeYorum('${docu.id}')">👍 ${data.like}</button>
+${sil}
+</div>
+
+`;
+
+});
+
+});
+
+/* LIKE */
+
+window.likeYorum=async function(id){
+
+await updateDoc(doc(db,"yorumlar",id),{
+like:increment(1)
+});
+
+}
+
+/* YORUM SIL */
+
+window.yorumSil=async function(id){
+
+if(!admin) return;
+
+await deleteDoc(doc(db,"yorumlar",id));
+
+}
+
+/* ADMIN GIRIS */
+
+window.adminLogin=function(){
+
+let u=document.getElementById("adminUser").value;
+let p=document.getElementById("adminPass").value;
+
+if(u=="admin" && p=="sinanasln890"){
+
+admin=true;
+alert("Admin giriş başarılı");
+openPage("adminPanel");
+
+}else{
+
+document.getElementById("adminStatus").innerText="Hatalı giriş";
+
+}
+
+}
+
+/* BLOG SISTEMI */
+
+let bloglar=[
+"Cristiano Ronaldo: Disiplin başarı getirir",
+"Michael Jordan: Pes etmeyen kazanır",
+"Kobe Bryant: Her gün geliş",
+"Muhammad Ali: Kendine inan",
+"Arnold Schwarzenegger: Güç mücadeleden gelir",
+"Usain Bolt: Sınırlarını zorla",
+"Serena Williams: Büyük hayaller kur"
+];
+
+window.blogEkle=function(){
+
+if(!admin) return;
+
+let yeni=document.getElementById("newBlog").value;
+
+if(yeni=="") return;
+
+bloglar.push(yeni);
+
+alert("Blog yazısı eklendi");
+
+}
+
+/* BLOG SLIDER */
+
+let bIndex=0;
+
+function blogSlider(){
+
+document.getElementById("blogText").innerText=bloglar[bIndex];
+bIndex=(bIndex+1)%bloglar.length;
+
+}
+
+setInterval(blogSlider,15000);
+blogSlider();
+
+/* MOTIVASYON SLIDER */
+
+let motivasyonlar=[
+"Başarı disiplin ister",
+"Çalışmadan kazanılmaz",
+"Pes etmek yok",
+"Her gün daha iyi ol",
+"Azim kazandırır",
+"Sınırlarını zorla",
+"Başarı çalışana gelir"
+];
+
+let mIndex=0;
+
+function motivasyonSlider(){
+
+document.getElementById("motivationText").innerText=motivasyonlar[mIndex];
+mIndex=(mIndex+1)%motivasyonlar.length;
+
+}
+
+setInterval(motivasyonSlider,15000);
+motivasyonSlider();
+
+/* BOYKOT SISTEMI */
+
+let boykotMarkalar=[
+"coca cola","pepsi","nestle","starbucks","mcdonalds","burger king",
+"kfc","subway","dominos","pizza hut","lipton","nescafe","kitkat",
+"magnum","doritos","lays","fanta","sprite","red bull","monster"
+];
+
+window.boykotEkle=function(){
+
+if(!admin) return;
+
+let yeni=document.getElementById("yeniBoykot").value.toLowerCase();
+
+boykotMarkalar.push(yeni);
+
+alert("Boykot listesine eklendi");
+
+}
+
+window.boykotAra=function(){
+
+let urun=document.getElementById("urunAra").value.toLowerCase();
+
+if(boykotMarkalar.includes(urun)){
+
+document.getElementById("boykotSonuc").innerText="❌ Boykot listesinde";
+
+}else{
+
+document.getElementById("boykotSonuc").innerText="✅ Boykot listesinde değil";
+
+}
+
+}
+
+/* ZIYARETCI SAYACI */
+
+function loadVisitors(){
+
+fetch("https://api.countapi.xyz/hit/sinanxlord00/visits")
+.then(res=>res.json())
+.then(data=>{
+
+console.log("Ziyaretçi:",data.value);
+
+});
+
+}
+
+/* MUZIK */
+
+const music=document.getElementById("bgMusic");
+let playing=false;
+
+window.toggleMusic=function(){
+
+if(!playing){
+
+music.play();
+playing=true;
+document.getElementById("musicBtn").innerText="🔊";
+
+}else{
+
+music.pause();
+playing=false;
+document.getElementById("musicBtn").innerText="🔇";
+
+}
+
+}
+
+/* GIRIS ANIMASYONU */
+
+window.onload=function(){
+
+document.body.style.opacity="0";
+
+setTimeout(()=>{
+
+document.body.style.transition="1s";
+document.body.style.opacity="1";
+
+},200);
+
+}
